@@ -13,16 +13,27 @@ jobs:
       - name: Install Linux Audio & GUI Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential make clang llvm libfreetype6-dev libx11-dev libxinerama-dev libxrandr-dev libxcursor-dev mesa-common-dev libasound2-dev freeglut3-dev libxcomposite-dev libcurl4-gnutls-dev libgtk-3-dev libwebkit2gtk-4.0-dev libjack-jackd2-dev ladspa-sdk
+          sudo apt-get install -y build-essential make clang llvm xvfb libfreetype6-dev libx11-dev libxinerama-dev libxrandr-dev libxcursor-dev mesa-common-dev libasound2-dev freeglut3-dev libxcomposite-dev libcurl4-gnutls-dev libgtk-3-dev libwebkit2gtk-4.0-dev libjack-jackd2-dev ladspa-sdk
 
       - name: Extract SDKs
         run: |
-          unzip -q tools/SDK/sdk.zip -d tools/SDK/
+          if [ -f "tools/SDK/sdk.zip" ]; then
+            unzip -q -o tools/SDK/sdk.zip -d tools/SDK/
+          fi
 
-      - name: Generate Linux Makefile with Projucer
+      - name: Find & Build Projucer
         run: |
-          chmod +x JUCE/projucer/Projucer
-          xvfb-run JUCE/projucer/Projucer --resave "projects/standalone/HISE Standalone.jucer"
+          PROJUCER_DIR=$(find . -path "*Projucer*/Builds/LinuxMakefile" -o -path "*projucer*/Builds/LinuxMakefile" | head -n 1)
+          if [ -n "$PROJUCER_DIR" ]; then
+            echo "Found Projucer Makefile at: $PROJUCER_DIR"
+            make -C "$PROJUCER_DIR" CONFIG=Release -j$(nproc)
+            PROJUCER_BIN="$PROJUCER_DIR/build/Projucer"
+          else
+            PROJUCER_BIN=$(find . -type f -iname "Projucer" | head -n 1)
+            chmod +x "$PROJUCER_BIN"
+          fi
+          echo "Using Projucer at: $PROJUCER_BIN"
+          xvfb-run "$PROJUCER_BIN" --resave "projects/standalone/HISE Standalone.jucer"
 
       - name: Compile HISE
         run: |
@@ -33,4 +44,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HISE-Linux-Release
-          path: projects/standalone/Builds/LinuxMakefile/build/HISE Standalone
+          path: projects/standalone/Builds/LinuxMakefile/build/HISE*
