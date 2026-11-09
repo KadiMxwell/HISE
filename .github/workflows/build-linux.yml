@@ -21,8 +21,8 @@ jobs:
 
       - name: Generate Linux Makefile with Projucer
         run: |
-          chmod +x tools/projucer/Projucer
-          xvfb-run tools/projucer/Projucer --resave "projects/standalone/HISE Standalone.jucer"
+          chmod +x JUCE/projucer/Projucer
+          xvfb-run JUCE/projucer/Projucer --resave "projects/standalone/HISE Standalone.jucer"
 
       - name: Compile HISE
         run: |
