@@ -1,0 +1,36 @@
+name: Build HISE Linux
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout HISE code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Audio & GUI Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential make clang llvm libfreetype6-dev libx11-dev libxinerama-dev libxrandr-dev libxcursor-dev mesa-common-dev libasound2-dev freeglut3-dev libxcomposite-dev libcurl4-gnutls-dev libgtk-3-dev libwebkit2gtk-4.0-dev libjack-jackd2-dev ladspa-sdk
+
+      - name: Extract SDKs
+        run: |
+          unzip -q tools/SDK/sdk.zip -d tools/SDK/
+
+      - name: Generate Linux Makefile with Projucer
+        run: |
+          chmod +x tools/projucer/Projucer
+          xvfb-run tools/projucer/Projucer --resave "projects/standalone/HISE Standalone.jucer"
+
+      - name: Compile HISE
+        run: |
+          cd projects/standalone/Builds/LinuxMakefile
+          make CONFIG=Release -j$(nproc)
+
+      - name: Upload Compiled HISE Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: HISE-Linux-Release
+          path: projects/standalone/Builds/LinuxMakefile/build/HISE Standalone
